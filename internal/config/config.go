@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Config struct {
@@ -17,6 +18,61 @@ type Config struct {
 	// Shared lists keys that may hold the same value in every environment
 	// (for example SENTRY_DSN), so compare doesn't flag them.
 	Shared []string `json:"shared,omitempty"`
+	// Workspaces are named sets of services, saved per bucket.
+	Workspaces []Workspace `json:"workspaces,omitempty"`
+}
+
+// Workspace is a named shortlist of services in one bucket. It stores
+// service names only, never secrets.
+type Workspace struct {
+	Name     string   `json:"name"`
+	Bucket   string   `json:"bucket"`
+	Services []string `json:"services"`
+}
+
+// WorkspacesFor lists the workspaces saved for a bucket, in creation order.
+func (c Config) WorkspacesFor(bucket string) []Workspace {
+	var out []Workspace
+	for _, w := range c.Workspaces {
+		if w.Bucket == bucket {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+// SaveWorkspace adds w, or replaces the workspace called old in the same
+// bucket (old is empty for a new one).
+func (c *Config) SaveWorkspace(old string, w Workspace) {
+	for i, x := range c.Workspaces {
+		if x.Bucket == w.Bucket && strings.EqualFold(x.Name, old) && old != "" {
+			c.Workspaces[i] = w
+			return
+		}
+	}
+	c.Workspaces = append(c.Workspaces, w)
+}
+
+// DeleteWorkspace removes a workspace by name.
+func (c *Config) DeleteWorkspace(bucket, name string) {
+	out := c.Workspaces[:0]
+	for _, x := range c.Workspaces {
+		if !(x.Bucket == bucket && strings.EqualFold(x.Name, name)) {
+			out = append(out, x)
+		}
+	}
+	c.Workspaces = out
+}
+
+// HasWorkspace reports whether a name is taken in a bucket, ignoring case and
+// the workspace being renamed.
+func (c Config) HasWorkspace(bucket, name, except string) bool {
+	for _, x := range c.Workspaces {
+		if x.Bucket == bucket && strings.EqualFold(x.Name, name) && !strings.EqualFold(x.Name, except) {
+			return true
+		}
+	}
+	return false
 }
 
 func Dir() string {

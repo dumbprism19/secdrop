@@ -211,7 +211,7 @@ func (m *Model) showEnv() tea.Cmd {
 }
 
 func (m *Model) closePanel() {
-	m.panel, m.cmp, m.pendingKey, m.hist = false, nil, "", nil
+	m.panel, m.cmp, m.pendingKey, m.hist, m.wsReturn = false, nil, "", nil, ""
 	m.keyIn.SetValue("")
 	m.keyIn.Blur()
 	if m.typing == 2 {
@@ -426,6 +426,8 @@ func (m *Model) browserKey(k tea.KeyMsg) tea.Cmd {
 		return nil
 	case "b":
 		return m.openPicker()
+	case "w", "ctrl+w":
+		return m.openWorkspaces()
 	case "L":
 		m.scr = scrAuth
 		return m.login()
@@ -454,7 +456,11 @@ func (m *Model) panelKey(key string) tea.Cmd {
 			m.kcur, m.koff = 0, 0
 			return nil
 		}
+		left, ws := m.svc, m.wsReturn
 		m.closePanel()
+		if ws != "" {
+			return m.returnToWorkspace(ws, left)
+		}
 		return nil
 	case "tab", "shift+tab", "]", "[":
 		if sv == nil || len(sv.secrets) < 2 {
@@ -712,11 +718,11 @@ func (m *Model) footer(w int) string {
 		}
 		h = [][2]string{{"↑↓", "move"}, {"tab", "other env"}, {"enter", enter}, {"esc", "close"}}
 	case m.panel && m.shownDoc() != nil:
-		h = [][2]string{{"enter", "reveal"}, {"y", "copy export"}, {"e", "edit"}, {"/", "search"}, {"tab", "environment"}, {"esc", "back"}, {paletteKey, "more"}}
+		h = [][2]string{{"enter", "reveal"}, {"y", "copy export"}, {"e", "edit"}, {"/", "search"}, {"tab", "environment"}, {"w", "workspaces"}, {"esc", "back"}, {paletteKey, "more"}}
 	case m.panel:
 		h = [][2]string{{"enter", "decrypt"}, {"tab", "environment"}, {"esc", "back"}}
 	default:
-		h = [][2]string{{"type", "to search"}, {"↑↓", "move"}, {"enter", "open"}, {"tab", "environment"}, {paletteKey, "everything"}, {"ctrl+c", "quit"}}
+		h = [][2]string{{"type", "to search"}, {"↑↓", "move"}, {"enter", "open"}, {"tab", "environment"}, {"ctrl+w", "workspaces"}, {paletteKey, "everything"}, {"ctrl+c", "quit"}}
 	}
 	return trunc(hints(h), w)
 }

@@ -81,6 +81,8 @@ func (m *Model) homeKey(k tea.KeyMsg) tea.Cmd {
 		m.cur = 0
 	case "end":
 		m.cur = n - 1
+	case "ctrl+w":
+		return m.openWorkspaces()
 	case "tab", "shift+tab":
 		if c := len(m.envs) + 1; c > 1 {
 			if k.String() == "tab" {
@@ -95,6 +97,7 @@ func (m *Model) homeKey(k tea.KeyMsg) tea.Cmd {
 		m.cur, m.off = 0, 0
 	case "enter", "right":
 		if sv := m.selectedService(); sv != nil {
+			m.wsReturn = ""
 			return m.openService(sv.name, "")
 		}
 	default:

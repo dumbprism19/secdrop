@@ -84,3 +84,6 @@ require (
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
+
+// v0.2.0 was tagged on the v0.1.0 commit by mistake and lacks the v0.2 features.
+retract v0.2.0

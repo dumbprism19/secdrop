@@ -24,6 +24,8 @@ const (
 	mSaving
 	mPod
 	mExport
+	mWorkspace
+	mWsDelete
 )
 
 // modal is the one dialog that can be open over the browser: edit, add,
@@ -46,7 +48,11 @@ type modal struct {
 
 	pod kube.Pod
 	// bulk holds several KEY=value pairs pasted into the add dialog at once.
-	bulk    []dotenv.Assignment
+	bulk []dotenv.Assignment
+	// workspace editor: services picked, cursor, and the name being edited
+	wsSel   map[string]bool
+	wsCur   int
+	wsOrig  string
 	addNote string // what a paste filled in
 	// oneStep review dialogs (restore, copy across) close on "n" instead of
 	// returning to an earlier step.
@@ -96,6 +102,12 @@ func (m *Model) modalKey(k tea.KeyMsg) tea.Cmd {
 	switch md.kind {
 	case mSaving:
 		return nil
+
+	case mWorkspace:
+		return m.workspaceKey(k)
+
+	case mWsDelete:
+		return m.workspaceDeleteKey(key)
 
 	case mExport:
 		switch key {
@@ -406,6 +418,12 @@ func (m *Model) viewModal() string {
 		} else {
 			body = append(body, hints([][2]string{{"y", "save"}, {"n", "go back"}}))
 		}
+	case mWorkspace:
+		title, body = m.viewWorkspaceModal(w)
+	case mWsDelete:
+		title = "Delete workspace " + md.key + "?"
+		body = []string{sText.Render("Only the shortlist is removed. Services and secrets are untouched."), "",
+			hints([][2]string{{"y", "delete"}, {"n", "keep it"}})}
 	case mExport:
 		title = "Export to a file"
 		body = []string{where, "", sMuted.Render("File"), md.valIn.View(), sLine.Render(strings.Repeat("─", w-4))}
@@ -442,6 +460,7 @@ func (m *Model) viewHelp() string {
 		sTitle.Render("EVERYWHERE"),
 		row(paletteKey, "search and every other action"),
 		row("/", "filter the list you're looking at"),
+		row("w  ctrl+w", "workspaces (ctrl+w on the home screen)"),
 		row("tab", "switch environment"),
 		row("enter  esc", "open and go back"),
 		"", sTitle.Render("IN A SERVICE"),
