@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/screens/home.svg" alt="secdrop's home screen: services grouped by when they last changed, with a preview of each environment" width="900">
+  <img src="assets/demo.gif" alt="secdrop in 14 seconds: from a long berglas command to finding a service, revealing values, comparing environments and the command palette" width="900">
 </p>
 
 ---
@@ -48,6 +48,10 @@ secdrop turns that into a few keystrokes:
 ## A quick tour
 
 ### Find any service in a keystroke
+
+<p align="center">
+  <img src="assets/screens/home.svg" alt="secdrop's home screen: services grouped by when they last changed, with a preview of each environment" width="900">
+</p>
 
 The home screen lists every service, grouped by when it last changed, with a dot for each
 environment it has. Type to filter, press <kbd>enter</kbd> to open. The preview on the right
