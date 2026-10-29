@@ -14,6 +14,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/muesli/termenv v0.16.0
+	golang.org/x/mod v0.42.0
 	golang.org/x/oauth2 v0.37.0
 	google.golang.org/api v0.306.0
 )

@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/dumbprism19/secdrop/internal/config"
 	"github.com/dumbprism19/secdrop/internal/keysetup"
 	"github.com/dumbprism19/secdrop/internal/ui"
 )
@@ -35,6 +36,7 @@ func main() {
 	flag.StringVar(&opts.Bucket, "bucket", "", "open this bucket instead of the remembered one")
 	flag.BoolVar(&opts.Pick, "pick", false, "choose a bucket even if one is remembered")
 	flag.BoolVar(&opts.NoMotion, "no-motion", false, "turn off animation (also SECDROP_NO_MOTION=1)")
+	noAutoUpdate := flag.Bool("no-auto-update", false, "don't install new releases on launch (also SECDROP_NO_AUTO_UPDATE=1)")
 	showVersion := flag.Bool("version", false, "print the version")
 	flag.Parse()
 	switch flag.Arg(0) {
@@ -64,6 +66,7 @@ func main() {
 		opts.NoMotion = true
 	}
 	opts.Version = currentVersion()
+	autoUpdate(&opts, *noAutoUpdate || os.Getenv("SECDROP_NO_AUTO_UPDATE") != "" || config.Load().NoAutoUpdate)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

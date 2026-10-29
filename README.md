@@ -55,6 +55,23 @@ go install github.com/dumbprism19/secdrop/cmd/secdrop@latest
 
 This puts `secdrop` in `~/go/bin`; make sure that directory is on your `PATH`.
 
+### Updates
+
+secdrop keeps itself up to date. When it starts, it checks Go's module mirror for a newer
+release (at most once an hour, giving up after 2 seconds when offline). If there is one and
+secdrop was installed with `go install`, it installs the new version and restarts into it;
+the home screen then shows what it updated from. Withdrawn (retracted) releases are skipped.
+
+If it can't update itself (installed another way, `go` not on the `PATH`, or the install
+failed), the home screen shows the command to run instead. `secdrop run` and
+`secdrop export` never update, so scripts behave the same every time.
+
+To turn automatic updates off, use any of:
+
+- `secdrop --no-auto-update`
+- `SECDROP_NO_AUTO_UPDATE=1`
+- `"no_auto_update": true` in `~/.config/secdrop/config.json`
+
 Or from source:
 
 ```sh
