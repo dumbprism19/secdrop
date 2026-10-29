@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -161,4 +162,102 @@ func TestPaletteCards(t *testing.T) {
 		t.Fatal("typing should search keys")
 	}
 	dump(t, "palette-search", m.View())
+}
+
+func TestExportLine(t *testing.T) {
+	cases := map[string]string{
+		"8080":                        "export K=8080",
+		"postgres://u:p@10.0.0.4/app": "export K=postgres://u:p@10.0.0.4/app",
+		"two words":                   "export K='two words'",
+		"it's":                        `export K='it'\''s'`,
+		"$HOME and `cmd`":             "export K='$HOME and `cmd`'",
+		"":                            "export K=''",
+		"line1\nline2":                "export K='line1\nline2'",
+	}
+	for in, want := range cases {
+		if got := exportLine("K", in); got != want {
+			t.Errorf("%q → %s, want %s", in, got, want)
+		}
+	}
+	// Each line must give the original value back when run by a real shell.
+	for in, line := range cases {
+		out, err := exec.Command("sh", "-c", line+`; printf %s "$K"`).Output()
+		if err != nil || string(out) != in {
+			t.Errorf("shell read %q back as %q (%v)", in, out, err)
+		}
+	}
+}
+
+// Paste tests use the in-memory sample service only and stop at the review
+// screen; nothing is ever saved (the fixture has no cloud store at all).
+func pasteMsg(s string) tea.KeyMsg {
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s), Paste: true}
+}
+
+func openAdd(t *testing.T) *Model {
+	m := fixture()
+	m.modal = newAddModal(m.shownDoc())
+	if m.st != nil {
+		t.Fatal("tests must not have a cloud store")
+	}
+	return m
+}
+
+func TestPasteOneExportLine(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+	m := openAdd(t)
+	m.Update(pasteMsg("export NEW_KEY = 'hello world'"))
+	md := m.modal
+	if md.keyIn.Value() != "NEW_KEY" || md.valIn.Value() != "hello world" || md.field != 1 {
+		t.Fatalf("key %q value %q field %d", md.keyIn.Value(), md.valIn.Value(), md.field)
+	}
+	dump(t, "add-pasted", m.View())
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if md.kind != mConfirm || !strings.Contains(md.change, "Adds NEW_KEY") {
+		t.Fatalf("should be reviewing: kind %v change %q", md.kind, md.change)
+	}
+	data := string(md.data)
+	if !strings.Contains(data, `NEW_KEY="hello world"`) || !strings.HasPrefix(data, "DATABASE_URL=postgres://u:p@10.0.0.4/pay\n") {
+		t.Fatalf("file would be:\n%s", data)
+	}
+}
+
+func TestTypedExportLineInKeyBox(t *testing.T) {
+	m := openAdd(t)
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("export PORT=8080")})
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if md := m.modal; md.keyIn.Value() != "PORT" || md.valIn.Value() != "8080" || md.field != 1 {
+		t.Fatalf("key %q value %q", md.keyIn.Value(), md.valIn.Value())
+	}
+}
+
+func TestPasteBlock(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+	m := openAdd(t)
+	m.Update(pasteMsg("# from my shell\nexport A=1\nexport B = 'two words'\nexport REDIS_URL=redis://new:6379\n"))
+	md := m.modal
+	if len(md.bulk) != 3 {
+		t.Fatalf("bulk %v", md.bulk)
+	}
+	v := m.View()
+	dump(t, "add-block", v)
+	if !strings.Contains(v, "Add 3 keys") || !strings.Contains(v, "replaces current") || strings.Contains(v, "two words") {
+		t.Fatalf("block view wrong (values must stay hidden):\n%s", v)
+	}
+	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if md.kind != mConfirm || md.change != "Adds A, B; replaces REDIS_URL" {
+		t.Fatalf("change %q", md.change)
+	}
+	if strings.Count(string(md.data), "REDIS_URL=") != 1 {
+		t.Fatal("REDIS_URL must be replaced in place, not duplicated")
+	}
+}
+
+func TestPastePlainValueStillWorks(t *testing.T) {
+	m := openAdd(t)
+	m.Update(tea.KeyMsg{Type: tea.KeyTab}) // to the Value box
+	m.Update(pasteMsg("just-a-token-value"))
+	if md := m.modal; md.valIn.Value() != "just-a-token-value" || md.keyIn.Value() != "" {
+		t.Fatalf("plain paste went wrong: key %q value %q", md.keyIn.Value(), md.valIn.Value())
+	}
 }
