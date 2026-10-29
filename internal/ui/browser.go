@@ -559,7 +559,11 @@ func (m *Model) panelKey(key string) tea.Cmd {
 func (m *Model) viewBrowser() string {
 	w, h := m.w, m.h
 	right := sMuted.Render("gs://"+m.bucket) + sFaint.Render("  ·  ") + sMuted.Render(orWord(m.ident.Email, "signed in"))
-	lines := []string{" " + spread(miniLogo(), trunc(right, w-20), w-2), ""}
+	notice := ""
+	if !m.panel {
+		notice = m.updateNotice(w - 2)
+	}
+	lines := []string{" " + spread(miniLogo(), trunc(right, w-20), w-2), " " + notice}
 
 	var body []string
 	bh := h - 4 // header, blank, blank, footer

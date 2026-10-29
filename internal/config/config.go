@@ -18,6 +18,8 @@ type Config struct {
 	// Shared lists keys that may hold the same value in every environment
 	// (for example SENTRY_DSN), so compare doesn't flag them.
 	Shared []string `json:"shared,omitempty"`
+	// NoAutoUpdate stops secdrop installing new releases when it starts.
+	NoAutoUpdate bool `json:"no_auto_update,omitempty"`
 	// Workspaces are named sets of services, saved per bucket.
 	Workspaces []Workspace `json:"workspaces,omitempty"`
 }

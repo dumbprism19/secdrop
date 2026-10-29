@@ -67,6 +67,7 @@ func (m *Model) services() []service {
 }
 
 func (m *Model) homeKey(k tea.KeyMsg) tea.Cmd {
+	m.updatedSeen = true // the "Updated to …" line goes once you start using the app
 	n := len(m.services())
 	switch k.String() {
 	case "up":
@@ -335,4 +336,23 @@ func newSearchInput() textinput.Model {
 	in.Cursor.Style = sAmber
 	in.Focus()
 	return in
+}
+
+// updateNotice is the line under the header on the home screen: a short
+// confirmation after an automatic update, or how to update when secdrop
+// couldn't do it itself.
+func (m *Model) updateNotice(w int) string {
+	o := m.opts
+	cmd := "go install github.com/dumbprism19/secdrop/cmd/secdrop@latest"
+	switch {
+	case o.UpdatedFrom != "" && !m.updatedSeen:
+		return sOK.Render("✓ ") + sText.Render("Updated secdrop "+o.UpdatedFrom+" → "+o.Version)
+	case o.UpdateAvailable == "":
+		return ""
+	case o.UpdateErr != nil:
+		return trunc(sAmber.Render("↑ secdrop "+strings.TrimPrefix(o.UpdateAvailable, "v")+" is available")+
+			sMuted.Render(" · couldn't update automatically ("+o.UpdateErr.Error()+") · run ")+sKey.Render(cmd), w)
+	}
+	return trunc(sAmber.Render("↑ secdrop "+strings.TrimPrefix(o.UpdateAvailable, "v")+" is available")+
+		sMuted.Render(" · update with ")+sKey.Render(cmd), w)
 }
