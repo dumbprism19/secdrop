@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1018 646" width="1018" height="646">
+<rect width="1018" height="646" rx="12" fill="#1C1A17"/>
+<rect width="1018" height="34" rx="12" fill="#262320"/>
+<rect y="22" width="1018" height="12" fill="#262320"/>
+<circle cx="20" cy="17.0" r="6" fill="#FF5F57"/>
+<circle cx="40" cy="17.0" r="6" fill="#FEBC2E"/>
+<circle cx="60" cy="17.0" r="6" fill="#28C840"/>
+<text x="509.0" y="22.0" fill="#8E8473" font-family="SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Liberation Mono', monospace" font-size="13" text-anchor="middle">secdrop</text>
+<g font-family="SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
+<text x="26.4" y="65" fill="#fbb33a">▟▀▙</text>
+<text x="60.0" y="65" fill="#fbb33a" font-weight="bold">Sec</text>
+<text x="85.2" y="65" fill="#f2efea" font-weight="bold">drop</text>
+<text x="690.0" y="65" fill="#8e8373">gs://acme-secrets</text>
+<text x="849.6" y="65" fill="#5c5446">·</text>
+<text x="874.8" y="65" fill="#8e8373">you@example.com</text>
+<text x="26.4" y="101" fill="#fbb33a">←</text>
+<text x="43.2" y="101" fill="#f2efea" font-weight="bold">payments-api</text>
+<text x="933.6" y="101" fill="#fbb33a" font-weight="bold">esc</text>
+<text x="967.2" y="101" fill="#8e8373">back</text>
+<text x="34.8" y="137" fill="#8e8373">dev</text>
+<text x="85.2" y="137" fill="#fbb33a">staging</text>
+<rect x="160.8" y="124" width="8.4" height="18" fill="#ff5b2e"/>
+<rect x="169.2" y="124" width="33.6" height="18" fill="#ff5b2e"/>
+<text x="169.2" y="137" fill="#1a1408" font-weight="bold">prod</text>
+<rect x="202.8" y="124" width="8.4" height="18" fill="#ff5b2e"/>
+<text x="26.4" y="173" fill="#5c5446">updated</text>
+<text x="93.6" y="173" fill="#5c5446">6h</text>
+<text x="118.8" y="173" fill="#5c5446">ago</text>
+<text x="152.4" y="173" fill="#5c5446">·</text>
+<text x="169.2" y="173" fill="#5c5446">9</text>
+<text x="186.0" y="173" fill="#5c5446">keys</text>
+<text x="228.0" y="173" fill="#5c5446">·</text>
+<text x="244.8" y="173" fill="#5c5446">berglas://acme-secrets/payments-api-prod-env</text>
+<text x="26.4" y="209" fill="#8e8373">Pods</text>
+<text x="76.8" y="209" fill="#9bc279">●</text>
+<text x="93.6" y="209" fill="#e6dfd3">all</text>
+<text x="127.2" y="209" fill="#e6dfd3">3</text>
+<text x="144.0" y="209" fill="#e6dfd3">healthy</text>
+<text x="219.6" y="209" fill="#5c5446">·</text>
+<text x="244.8" y="209" fill="#5c5446">gke_acme_prod</text>
+<rect x="26.4" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="34.8" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="34.8" y="245" fill="#fbb33a" font-weight="bold">v</text>
+<rect x="43.2" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="60.0" y="245" fill="#e6dfd3">reveal</text>
+<text x="118.8" y="245" fill="#e6dfd3">all</text>
+<rect x="160.8" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="169.2" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="169.2" y="245" fill="#fbb33a" font-weight="bold">c</text>
+<rect x="177.6" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="194.4" y="245" fill="#e6dfd3">copy</text>
+<text x="236.4" y="245" fill="#e6dfd3">env</text>
+<rect x="278.4" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="286.8" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="286.8" y="245" fill="#fbb33a" font-weight="bold">d</text>
+<rect x="295.2" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="312.0" y="245" fill="#e6dfd3">compare</text>
+<rect x="387.6" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="396.0" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="396.0" y="245" fill="#fbb33a" font-weight="bold">h</text>
+<rect x="404.4" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="421.2" y="245" fill="#e6dfd3">history</text>
+<text x="26.4" y="281" fill="#f2efea" font-weight="bold">payments-api</text>
+<text x="144.0" y="281" fill="#ff5b2e">prod</text>
+<text x="194.4" y="281" fill="#8e8373">⇄</text>
+<text x="219.6" y="281" fill="#8e8373">dev</text>
+<text x="26.4" y="299" fill="#5c5446">Values</text>
+<text x="85.2" y="299" fill="#5c5446">are</text>
+<text x="118.8" y="299" fill="#5c5446">compared</text>
+<text x="194.4" y="299" fill="#5c5446">by</text>
+<text x="219.6" y="299" fill="#5c5446">fingerprint.</text>
+<text x="328.8" y="299" fill="#5c5446">Nothing</text>
+<text x="396.0" y="299" fill="#5c5446">is</text>
+<text x="421.2" y="299" fill="#5c5446">shown</text>
+<text x="471.6" y="299" fill="#5c5446">in</text>
+<text x="496.8" y="299" fill="#5c5446">plain</text>
+<text x="547.2" y="299" fill="#5c5446">text.</text>
+<text x="26.4" y="335" fill="#ff5b2e">1</text>
+<text x="43.2" y="335" fill="#ff5b2e">missing</text>
+<text x="110.4" y="335" fill="#ff5b2e">in</text>
+<text x="135.6" y="335" fill="#ff5b2e">dev</text>
+<text x="177.6" y="335" fill="#5c5446">·</text>
+<text x="202.8" y="335" fill="#fbb33a">1</text>
+<text x="219.6" y="335" fill="#fbb33a">only</text>
+<text x="261.6" y="335" fill="#fbb33a">in</text>
+<text x="286.8" y="335" fill="#fbb33a">dev</text>
+<text x="328.8" y="335" fill="#5c5446">·</text>
+<text x="354.0" y="335" fill="#9bc279">4</text>
+<text x="370.8" y="335" fill="#9bc279">identical</text>
+<text x="463.2" y="335" fill="#5c5446">·</text>
+<text x="488.4" y="335" fill="#8e8373">4</text>
+<text x="505.2" y="335" fill="#8e8373">differ</text>
+<text x="43.2" y="371" fill="#5c5446">KEY</text>
+<text x="312.0" y="371" fill="#5c5446">PROD</text>
+<text x="412.8" y="371" fill="#5c5446">DEV</text>
+<text x="26.4" y="389" fill="#fbb33a">▌</text>
+<text x="43.2" y="389" fill="#fbb33a" font-weight="bold">QUEUE_NAME</text>
+<text x="312.0" y="389" fill="#8e8373">f849·150b</text>
+<text x="412.8" y="389" fill="#5c5446">—</text>
+<text x="513.6" y="389" fill="#ff5b2e">missing</text>
+<text x="580.8" y="389" fill="#ff5b2e">in</text>
+<text x="606.0" y="389" fill="#ff5b2e">dev</text>
+<text x="43.2" y="407" fill="#e6dfd3">FEATURE_NEW_CHECKOUT</text>
+<text x="312.0" y="407" fill="#8e8373">cefd·495f</text>
+<text x="412.8" y="407" fill="#8e8373">cefd·495f</text>
+<text x="513.6" y="407" fill="#9bc279">identical</text>
+<text x="597.6" y="407" fill="#9bc279">in</text>
+<text x="622.8" y="407" fill="#9bc279">both</text>
+<text x="43.2" y="425" fill="#e6dfd3">RATE_LIMIT_PER_MIN</text>
+<text x="312.0" y="425" fill="#8e8373">37a4·4473</text>
+<text x="412.8" y="425" fill="#8e8373">37a4·4473</text>
+<text x="513.6" y="425" fill="#9bc279">identical</text>
+<text x="597.6" y="425" fill="#9bc279">in</text>
+<text x="622.8" y="425" fill="#9bc279">both</text>
+<text x="43.2" y="443" fill="#e6dfd3">SENTRY_DSN</text>
+<text x="312.0" y="443" fill="#8e8373">fe49·02da</text>
+<text x="412.8" y="443" fill="#8e8373">fe49·02da</text>
+<text x="513.6" y="443" fill="#9bc279">identical</text>
+<text x="597.6" y="443" fill="#9bc279">in</text>
+<text x="622.8" y="443" fill="#9bc279">both</text>
+<text x="43.2" y="461" fill="#e6dfd3">WEBHOOK_SIGNING_KEY</text>
+<text x="312.0" y="461" fill="#8e8373">4902·c42b</text>
+<text x="412.8" y="461" fill="#8e8373">4902·c42b</text>
+<text x="513.6" y="461" fill="#9bc279">identical</text>
+<text x="597.6" y="461" fill="#9bc279">in</text>
+<text x="622.8" y="461" fill="#9bc279">both</text>
+<text x="43.2" y="479" fill="#e6dfd3">FEATURE_REFUNDS_V2</text>
+<text x="312.0" y="479" fill="#5c5446">—</text>
+<text x="412.8" y="479" fill="#8e8373">cefd·495f</text>
+<text x="513.6" y="479" fill="#fbb33a">only</text>
+<text x="555.6" y="479" fill="#fbb33a">in</text>
+<text x="580.8" y="479" fill="#fbb33a">dev</text>
+<text x="43.2" y="497" fill="#e6dfd3">APP_ENV</text>
+<text x="312.0" y="497" fill="#8e8373">eaab·47ef</text>
+<text x="412.8" y="497" fill="#8e8373">eb53·43bf</text>
+<text x="513.6" y="497" fill="#5c5446">differs</text>
+<text x="43.2" y="515" fill="#e6dfd3">DATABASE_URL</text>
+<text x="312.0" y="515" fill="#8e8373">d207·d911</text>
+<text x="412.8" y="515" fill="#8e8373">e8d0·99f5</text>
+<text x="513.6" y="515" fill="#5c5446">differs</text>
+<text x="43.2" y="533" fill="#e6dfd3">LOG_LEVEL</text>
+<text x="312.0" y="533" fill="#8e8373">06c6·cb90</text>
+<text x="412.8" y="533" fill="#8e8373">4b35·4a6d</text>
+<text x="513.6" y="533" fill="#5c5446">differs</text>
+<text x="43.2" y="551" fill="#e6dfd3">REDIS_URL</text>
+<text x="312.0" y="551" fill="#8e8373">5bf3·7f30</text>
+<text x="412.8" y="551" fill="#8e8373">25bf·246d</text>
+<text x="513.6" y="551" fill="#5c5446">differs</text>
+<text x="26.4" y="623" fill="#fbb33a" font-weight="bold">↑↓</text>
+<text x="51.6" y="623" fill="#8e8373">move</text>
+<text x="110.4" y="623" fill="#fbb33a" font-weight="bold">tab</text>
+<text x="144.0" y="623" fill="#8e8373">other</text>
+<text x="194.4" y="623" fill="#8e8373">env</text>
+<text x="244.8" y="623" fill="#fbb33a" font-weight="bold">enter</text>
+<text x="295.2" y="623" fill="#8e8373">copy</text>
+<text x="337.2" y="623" fill="#8e8373">to</text>
+<text x="362.4" y="623" fill="#8e8373">dev</text>
+<text x="412.8" y="623" fill="#fbb33a" font-weight="bold">esc</text>
+<text x="446.4" y="623" fill="#8e8373">close</text>
+</g></svg>

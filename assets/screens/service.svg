@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1018 646" width="1018" height="646">
+<rect width="1018" height="646" rx="12" fill="#1C1A17"/>
+<rect width="1018" height="34" rx="12" fill="#262320"/>
+<rect y="22" width="1018" height="12" fill="#262320"/>
+<circle cx="20" cy="17.0" r="6" fill="#FF5F57"/>
+<circle cx="40" cy="17.0" r="6" fill="#FEBC2E"/>
+<circle cx="60" cy="17.0" r="6" fill="#28C840"/>
+<text x="509.0" y="22.0" fill="#8E8473" font-family="SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Liberation Mono', monospace" font-size="13" text-anchor="middle">secdrop</text>
+<g font-family="SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Liberation Mono', monospace" font-size="14" xml:space="preserve">
+<text x="26.4" y="65" fill="#fbb33a">▟▀▙</text>
+<text x="60.0" y="65" fill="#fbb33a" font-weight="bold">Sec</text>
+<text x="85.2" y="65" fill="#f2efea" font-weight="bold">drop</text>
+<text x="690.0" y="65" fill="#8e8373">gs://acme-secrets</text>
+<text x="849.6" y="65" fill="#5c5446">·</text>
+<text x="874.8" y="65" fill="#8e8373">you@example.com</text>
+<text x="26.4" y="101" fill="#fbb33a">←</text>
+<text x="43.2" y="101" fill="#f2efea" font-weight="bold">payments-api</text>
+<text x="933.6" y="101" fill="#fbb33a" font-weight="bold">esc</text>
+<text x="967.2" y="101" fill="#8e8373">back</text>
+<text x="34.8" y="137" fill="#8e8373">dev</text>
+<text x="85.2" y="137" fill="#fbb33a">staging</text>
+<rect x="160.8" y="124" width="8.4" height="18" fill="#ff5b2e"/>
+<rect x="169.2" y="124" width="33.6" height="18" fill="#ff5b2e"/>
+<text x="169.2" y="137" fill="#1a1408" font-weight="bold">prod</text>
+<rect x="202.8" y="124" width="8.4" height="18" fill="#ff5b2e"/>
+<text x="26.4" y="173" fill="#5c5446">updated</text>
+<text x="93.6" y="173" fill="#5c5446">6h</text>
+<text x="118.8" y="173" fill="#5c5446">ago</text>
+<text x="152.4" y="173" fill="#5c5446">·</text>
+<text x="169.2" y="173" fill="#5c5446">9</text>
+<text x="186.0" y="173" fill="#5c5446">keys</text>
+<text x="228.0" y="173" fill="#5c5446">·</text>
+<text x="244.8" y="173" fill="#5c5446">berglas://acme-secrets/payments-api-prod-env</text>
+<text x="26.4" y="209" fill="#8e8373">Pods</text>
+<text x="76.8" y="209" fill="#9bc279">●</text>
+<text x="93.6" y="209" fill="#e6dfd3">all</text>
+<text x="127.2" y="209" fill="#e6dfd3">3</text>
+<text x="144.0" y="209" fill="#e6dfd3">healthy</text>
+<text x="219.6" y="209" fill="#5c5446">·</text>
+<text x="244.8" y="209" fill="#5c5446">gke_acme_prod</text>
+<rect x="26.4" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="34.8" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="34.8" y="245" fill="#fbb33a" font-weight="bold">v</text>
+<rect x="43.2" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="60.0" y="245" fill="#e6dfd3">hide</text>
+<text x="102.0" y="245" fill="#e6dfd3">all</text>
+<rect x="144.0" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="152.4" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="152.4" y="245" fill="#fbb33a" font-weight="bold">c</text>
+<rect x="160.8" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="177.6" y="245" fill="#e6dfd3">copy</text>
+<text x="219.6" y="245" fill="#e6dfd3">env</text>
+<rect x="261.6" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="270.0" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="270.0" y="245" fill="#fbb33a" font-weight="bold">d</text>
+<rect x="278.4" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="295.2" y="245" fill="#e6dfd3">compare</text>
+<rect x="370.8" y="232" width="8.4" height="18" fill="#2b2414"/>
+<rect x="379.2" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="379.2" y="245" fill="#fbb33a" font-weight="bold">h</text>
+<rect x="387.6" y="232" width="8.4" height="18" fill="#2b2414"/>
+<text x="404.4" y="245" fill="#e6dfd3">history</text>
+<text x="43.2" y="281" fill="#5c5446">KEY</text>
+<text x="236.4" y="281" fill="#5c5446">VALUE</text>
+<text x="26.4" y="299" fill="#3a3328">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</text>
+<text x="43.2" y="317" fill="#e6dfd3">APP_ENV</text>
+<text x="236.4" y="317" fill="#5c5446">••••••••••••</text>
+<text x="43.2" y="335" fill="#e6dfd3">DATABASE_URL</text>
+<text x="236.4" y="335" fill="#5c5446">••••••••••••</text>
+<text x="43.2" y="353" fill="#e6dfd3">FEATURE_NEW_CHECKOUT</text>
+<text x="236.4" y="353" fill="#5c5446">••••••••••••</text>
+<text x="43.2" y="371" fill="#e6dfd3">LOG_LEVEL</text>
+<text x="236.4" y="371" fill="#ffd98a">info</text>
+<text x="43.2" y="389" fill="#e6dfd3">QUEUE_NAME</text>
+<text x="236.4" y="389" fill="#5c5446">••••••••••••</text>
+<text x="43.2" y="407" fill="#e6dfd3">RATE_LIMIT_PER_MIN</text>
+<text x="236.4" y="407" fill="#5c5446">••••••••••••</text>
+<text x="26.4" y="425" fill="#fbb33a">▌</text>
+<text x="43.2" y="425" fill="#fbb33a" font-weight="bold">REDIS_URL</text>
+<text x="236.4" y="425" fill="#ffd98a">redis://cache.internal:6379/0</text>
+<text x="43.2" y="443" fill="#e6dfd3">SENTRY_DSN</text>
+<text x="236.4" y="443" fill="#5c5446">••••••••••••</text>
+<text x="43.2" y="461" fill="#e6dfd3">WEBHOOK_SIGNING_KEY</text>
+<text x="236.4" y="461" fill="#5c5446">••••••••••••</text>
+<text x="26.4" y="623" fill="#fbb33a" font-weight="bold">enter</text>
+<text x="76.8" y="623" fill="#8e8373">reveal</text>
+<text x="152.4" y="623" fill="#fbb33a" font-weight="bold">y</text>
+<text x="169.2" y="623" fill="#8e8373">copy</text>
+<text x="211.2" y="623" fill="#8e8373">export</text>
+<text x="286.8" y="623" fill="#fbb33a" font-weight="bold">e</text>
+<text x="303.6" y="623" fill="#8e8373">edit</text>
+<text x="362.4" y="623" fill="#fbb33a" font-weight="bold">/</text>
+<text x="379.2" y="623" fill="#8e8373">search</text>
+<text x="454.8" y="623" fill="#fbb33a" font-weight="bold">tab</text>
+<text x="488.4" y="623" fill="#8e8373">environment</text>
+<text x="606.0" y="623" fill="#fbb33a" font-weight="bold">w</text>
+<text x="622.8" y="623" fill="#8e8373">workspaces</text>
+<text x="732.0" y="623" fill="#fbb33a" font-weight="bold">esc</text>
+<text x="765.6" y="623" fill="#8e8373">back</text>
+<text x="824.4" y="623" fill="#fbb33a" font-weight="bold">⌘K</text>
+<text x="849.6" y="623" fill="#8e8373">more</text>
+</g></svg>
