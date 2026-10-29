@@ -87,7 +87,8 @@ secdrop --no-motion       # no animation (or SECDROP_NO_MOTION=1)
 | `⌘K` / `ctrl+k` | everywhere | Services, pod health, search and every other action |
 | `enter` | service | Reveal the selected value |
 | `v` | service | Reveal every value |
-| `y` / `c` | service | Copy a value / copy the whole env file |
+| `y` | service | Copy the selected key as `export KEY=value` |
+| `c` | service | Copy the whole env file |
 | `e` | service | Edit a value |
 | `/` | service | Search keys |
 | `d` | service | Compare with another environment; `enter` on a missing key copies it across |
@@ -96,6 +97,10 @@ secdrop --no-motion       # no animation (or SECDROP_NO_MOTION=1)
 | `ctrl+c` | everywhere | Quit |
 
 Add key, delete key, export, switch bucket, reload and sign in again are in the ⌘K palette.
+
+When adding a key you can paste instead of typing: a line such as `export KEY=value`,
+`export KEY = 'two words'` or `KEY="value"` fills in the key and value, and a pasted block of
+several lines adds them all in one save. Keys that already exist are marked and replaced.
 
 macOS terminals use ⌘K themselves, so it never reaches the app by default. Run
 `secdrop setup-keys` once: in Cursor and VS Code it forwards ⌘K to secdrop only while a

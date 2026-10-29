@@ -45,6 +45,9 @@ type modal struct {
 	back   modalKind
 
 	pod kube.Pod
+	// bulk holds several KEY=value pairs pasted into the add dialog at once.
+	bulk    []dotenv.Assignment
+	addNote string // what a paste filled in
 	// oneStep review dialogs (restore, copy across) close on "n" instead of
 	// returning to an earlier step.
 	oneStep bool
@@ -188,8 +191,21 @@ func (m *Model) modalKey(k tea.KeyMsg) tea.Cmd {
 		return cmd
 
 	case mAdd:
+		// A paste that looks like KEY=value (or "export KEY = value", or a
+		// whole block of them) fills the dialog in instead of landing in a box.
+		if k.Paste && md.takePaste(string(k.Runes)) {
+			if md.field == 1 {
+				md.keyIn.Blur()
+				return md.valIn.Focus()
+			}
+			return nil
+		}
 		switch key {
 		case "esc":
+			if md.bulk != nil {
+				md.bulk, md.addNote = nil, ""
+				return nil
+			}
 			m.modal = nil
 			return nil
 		case "tab", "shift+tab", "down", "up":
@@ -201,29 +217,120 @@ func (m *Model) modalKey(k tea.KeyMsg) tea.Cmd {
 			md.keyIn.Blur()
 			return md.valIn.Focus()
 		case "enter":
+			if md.bulk != nil {
+				doc := md.o.doc.Clone()
+				var added, replaced []string
+				for _, a := range md.bulk {
+					if md.o.doc.Has(a.Key) {
+						replaced = append(replaced, a.Key)
+					} else {
+						added = append(added, a.Key)
+					}
+					doc.Set(a.Key, secret.FromString(a.Value))
+				}
+				m.review(md, doc.Bytes(), describeBulk(added, replaced), "Saved "+plural(len(md.bulk), "key"))
+				return nil
+			}
+			// "export KEY=value" typed into the Key box works like a paste.
+			if strings.Contains(md.keyIn.Value(), "=") && md.takePaste(md.keyIn.Value()) {
+				if md.bulk == nil {
+					md.keyIn.Blur()
+					return md.valIn.Focus()
+				}
+				return nil
+			}
 			name := strings.TrimSpace(md.keyIn.Value())
 			switch {
 			case !dotenv.ValidKey(name):
 				md.err = "Use letters, digits and underscores, starting with a letter."
 				return nil
-			case md.o.doc.Has(name):
-				md.err = name + " already exists. Edit it instead."
-				return nil
 			case md.field == 0:
 				md.field, md.err = 1, ""
+				if md.o.doc.Has(name) {
+					md.addNote = name + " already exists. Saving replaces its value."
+				}
 				md.keyIn.Blur()
 				return md.valIn.Focus()
 			}
 			doc := md.o.doc.Clone()
 			doc.Set(name, secret.FromString(md.valIn.Value()))
 			md.key = name
-			m.review(md, doc.Bytes(), "Adds "+name, "Added "+name)
+			if md.o.doc.Has(name) {
+				m.review(md, doc.Bytes(), "Replaces the value of "+name, "Saved "+name)
+			} else {
+				m.review(md, doc.Bytes(), "Adds "+name, "Added "+name)
+			}
 			return nil
 		}
 		md.err = ""
 		return md.updateInputs(k)
 	}
 	return nil
+}
+
+// takePaste reads pasted text as KEY=value lines. One line fills the Key and
+// Value boxes; several become a list to save together. It reports false when
+// the text isn't assignments, so a plain value can still be pasted normally.
+func (md *modal) takePaste(text string) bool {
+	text = strings.TrimSpace(text)
+	if !strings.Contains(text, "=") {
+		return false
+	}
+	pairs, err := dotenv.ParseAssignments(text)
+	if err != nil {
+		if strings.Contains(text, "\n") {
+			md.err = "Couldn't read the pasted lines: " + err.Error()
+			return true
+		}
+		return false
+	}
+	if len(pairs) == 0 {
+		return false
+	}
+	md.err = ""
+	if len(pairs) == 1 {
+		md.bulk = nil
+		md.keyIn.SetValue(pairs[0].Key)
+		md.valIn.SetValue(pairs[0].Value)
+		md.valIn.CursorEnd()
+		md.field = 1
+		md.addNote = "Read " + pairs[0].Key + " from the pasted line."
+		if md.o.doc.Has(pairs[0].Key) {
+			md.addNote = pairs[0].Key + " already exists. Saving replaces its value."
+		}
+		return true
+	}
+	// Later lines win if a key repeats, as in a .env file.
+	seen := map[string]int{}
+	var uniq []dotenv.Assignment
+	for _, p := range pairs {
+		if i, ok := seen[p.Key]; ok {
+			uniq[i] = p
+			continue
+		}
+		seen[p.Key] = len(uniq)
+		uniq = append(uniq, p)
+	}
+	md.bulk = uniq
+	return true
+}
+
+func describeBulk(added, replaced []string) string {
+	var parts []string
+	if len(added) > 0 {
+		parts = append(parts, "Adds "+joinKeys(added))
+	}
+	if len(replaced) > 0 {
+		parts = append(parts, "replaces "+joinKeys(replaced))
+	}
+	return strings.Join(parts, "; ")
+}
+
+func joinKeys(keys []string) string {
+	if len(keys) > 4 {
+		return strings.Join(keys[:4], ", ") + fmt.Sprintf(" and %d more", len(keys)-4)
+	}
+	return strings.Join(keys, ", ")
 }
 
 func (m *Model) review(md *modal, data []byte, change, note string) {
@@ -255,10 +362,31 @@ func (m *Model) viewModal() string {
 		} else {
 			v = sAmber
 		}
+		if md.bulk != nil {
+			title = fmt.Sprintf("Add %s", plural(len(md.bulk), "key"))
+			body = []string{where, "", sMuted.Render("From the pasted lines:")}
+			for i, a := range md.bulk {
+				if i == 10 {
+					body = append(body, sFaint.Render(fmt.Sprintf("  and %d more", len(md.bulk)-10)))
+					break
+				}
+				mark, note := sOK.Render("+ "), ""
+				if md.o.doc.Has(a.Key) {
+					mark, note = sAmber.Render("~ "), sAmber.Render("  replaces current")
+				}
+				body = append(body, "  "+mark+sText.Render(pad(trunc(a.Key, 26), 28))+sFaint.Render("••••••••")+note)
+			}
+			body = append(body, "", hints([][2]string{{"enter", "review"}, {"esc", "back"}}))
+			break
+		}
 		body = []string{where, "", k.Render("Key"), md.keyIn.View(), sLine.Render(strings.Repeat("─", w-4)),
 			v.Render("Value"), md.valIn.View(), sLine.Render(strings.Repeat("─", w-4))}
 		if md.err != "" {
 			body = append(body, sHot.Render(md.err))
+		} else if md.addNote != "" {
+			body = append(body, sAmber.Render(md.addNote))
+		} else {
+			body = append(body, sFaint.Render("Tip: paste a line like  export KEY=value  or a whole block."))
 		}
 		body = append(body, "", hints([][2]string{{"tab", "next field"}, {"enter", "continue"}, {"esc", "cancel"}}))
 	case mDelete:
@@ -319,7 +447,8 @@ func (m *Model) viewHelp() string {
 		"", sTitle.Render("IN A SERVICE"),
 		row("enter", "reveal a value (hides after 20s)"),
 		row("v", "reveal every value"),
-		row("y  c", "copy a value · copy the whole env"),
+		row("y", "copy as export KEY=value"),
+		row("c", "copy the whole env file"),
 		row("e", "edit a value"),
 		row("d", "compare; enter copies a missing key across"),
 		row("h", "history: versions, who changed it, restore"),

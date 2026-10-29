@@ -518,9 +518,14 @@ func (m *Model) panelKey(key string) tea.Cmd {
 		all := len(o.entries(false))
 		return m.copy(o.raw.Reveal(), fmt.Sprintf("Copied the whole %s env (%d keys)", label(o.sec), all))
 	case "y":
-		if ok {
-			return m.copy(e.Value.Reveal(), "Copied "+e.Key)
+		if !ok {
+			return nil
 		}
+		if !o.env {
+			// A single-value secret has no key name to export.
+			return m.copy(e.Value.Reveal(), "Copied the value")
+		}
+		return m.copy(exportLine(e.Key, e.Value.Reveal()), "Copied export "+e.Key+"=…")
 	case "e":
 		if ok {
 			m.modal = newEditModal(o, e)
@@ -707,7 +712,7 @@ func (m *Model) footer(w int) string {
 		}
 		h = [][2]string{{"↑↓", "move"}, {"tab", "other env"}, {"enter", enter}, {"esc", "close"}}
 	case m.panel && m.shownDoc() != nil:
-		h = [][2]string{{"enter", "reveal"}, {"y", "copy"}, {"e", "edit"}, {"/", "search"}, {"tab", "environment"}, {"esc", "back"}, {paletteKey, "more"}}
+		h = [][2]string{{"enter", "reveal"}, {"y", "copy export"}, {"e", "edit"}, {"/", "search"}, {"tab", "environment"}, {"esc", "back"}, {paletteKey, "more"}}
 	case m.panel:
 		h = [][2]string{{"enter", "decrypt"}, {"tab", "environment"}, {"esc", "back"}}
 	default:
@@ -891,4 +896,28 @@ func highlight(s, query string, st lipgloss.Style) string {
 		return st.Render(s)
 	}
 	return st.Render(s[:i]) + st.Underline(true).Foreground(cAmberHi).Render(s[i:i+len(q)]) + st.Render(s[i+len(q):])
+}
+
+// exportLine formats a key as a shell line, e.g. export PORT=8080. Values
+// with anything beyond plain characters are single-quoted, so spaces, quotes
+// and $ survive being pasted into a terminal.
+func exportLine(key, val string) string {
+	return "export " + key + "=" + shellQuote(val)
+}
+
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	safe := true
+	for _, r := range s {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("_@%+=:,./-", r)) {
+			safe = false
+			break
+		}
+	}
+	if safe {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
