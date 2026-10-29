@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -13,7 +15,20 @@ import (
 	"github.com/dumbprism19/secdrop/internal/ui"
 )
 
-var version = "0.1.0"
+// version can be set by a release build with -ldflags "-X main.version=…".
+// Otherwise Go's build info supplies it: `go install …@v0.3.0` reports 0.3.0,
+// and a build from a checkout reports a pseudo-version for its commit.
+var version = ""
+
+func currentVersion() string {
+	if version != "" {
+		return version
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+		return strings.TrimPrefix(bi.Main.Version, "v")
+	}
+	return "dev"
+}
 
 func main() {
 	var opts ui.Options
@@ -42,13 +57,13 @@ func main() {
 		return
 	}
 	if *showVersion {
-		fmt.Println("secdrop", version)
+		fmt.Println("secdrop", currentVersion())
 		return
 	}
 	if os.Getenv("SECDROP_NO_MOTION") != "" || os.Getenv("REDUCE_MOTION") != "" {
 		opts.NoMotion = true
 	}
-	opts.Version = version
+	opts.Version = currentVersion()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -30,7 +30,9 @@ Works for a whole organization or for one person with a single bucket.
   read it (from Cloud Audit Logs), and a one-step restore.
 - **Pod health** for each service from your current `kubectl` context, matched to services
   even behind Helm release prefixes.
-- **⌘K / ctrl+K palette** with Services, Pod health and Search.
+- **⌘K / ctrl+K palette** with Services, Pod health and Search, plus your workspaces.
+- **Workspaces.** Save the services you use most as a named workspace ("Payments team") and
+  open them from ⌘K without searching. Stored locally per bucket; names only, no secrets.
 - **Scriptable.** `secdrop run` starts a command with a service's secrets in its environment,
   without writing them to disk. `secdrop export` writes an owner-only `.env` file.
 
@@ -84,6 +86,7 @@ secdrop --no-motion       # no animation (or SECDROP_NO_MOTION=1)
 | type | home | Search services |
 | `↑` `↓` · `enter` · `esc` | everywhere | Move · open · go back |
 | `tab` | everywhere | Switch environment |
+| `w` / `ctrl+w` | service / home | Your workspaces, with **+ New workspace** at the top |
 | `⌘K` / `ctrl+k` | everywhere | Services, pod health, search and every other action |
 | `enter` | service | Reveal the selected value |
 | `v` | service | Reveal every value |
@@ -97,6 +100,12 @@ secdrop --no-motion       # no animation (or SECDROP_NO_MOTION=1)
 | `ctrl+c` | everywhere | Quit |
 
 Add key, delete key, export, switch bucket, reload and sign in again are in the ⌘K palette.
+
+Press `w` (or `ctrl+w` on the home screen, where letters go to the search box) to see your
+workspaces and create new ones. They're also in ⌘K, to the right of the cards: `→` moves into the list, `↑↓` picks one,
+and enter opens it. Choose **+ New workspace** to name one and tick its services with space.
+Inside a workspace, enter on a service opens its secrets; the list also has rows to edit or
+delete the workspace.
 
 When adding a key you can paste instead of typing: a line such as `export KEY=value`,
 `export KEY = 'two words'` or `KEY="value"` fills in the key and value, and a pasted block of

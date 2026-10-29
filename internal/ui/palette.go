@@ -25,6 +25,8 @@ const (
 	pmServices
 	pmPods
 	pmSearch
+	pmWorkspace  // one workspace's services
+	pmWorkspaces // the list of workspaces, opened with w / ctrl+w
 )
 
 var cardTitles = []string{"Services", "Pod health", "Search"}
@@ -37,9 +39,10 @@ const (
 	pkKey
 	pkEnv
 	pkPod
+	pkWorkspace
 )
 
-var pkindLabel = map[pkind]string{pkAction: "action", pkService: "service", pkKey: "key", pkEnv: "env", pkPod: "pod"}
+var pkindLabel = map[pkind]string{pkAction: "action", pkService: "service", pkKey: "key", pkEnv: "env", pkPod: "pod", pkWorkspace: "workspace"}
 
 type pitem struct {
 	kind   pkind
@@ -51,12 +54,18 @@ type pitem struct {
 }
 
 type palette struct {
-	in      textinput.Model
-	mode    pmode
-	card    int // highlighted card on the card screen
-	items   []pitem
-	matches []int
-	cur     int
+	in     textinput.Model
+	mode   pmode
+	card   int    // highlighted card on the card screen; wsCard is the workspace column
+	wsCur  int    // highlighted row in the workspace column
+	ws     string // the workspace open in pmWorkspace
+	parent pmode  // where esc goes back to from a list
+	// closeOnEsc is set when the palette reopened on a workspace because
+	// you came back from one of its services: esc then goes home.
+	closeOnEsc bool
+	items      []pitem
+	matches    []int
+	cur        int
 
 	spring harmonica.Spring
 	y, vy  float64 // offset from the resting row; starts above it
@@ -88,6 +97,14 @@ func (m *Model) openPalette(query string) tea.Cmd {
 }
 
 func (p *palette) setMode(m *Model, mode pmode) {
+	switch {
+	case mode == pmCards:
+		p.parent = pmCards
+	case mode == pmWorkspace && p.mode == pmWorkspaces:
+		p.parent = pmWorkspaces
+	case mode != pmWorkspace:
+		p.parent = pmCards
+	}
 	p.mode, p.cur = mode, 0
 	p.refresh(m)
 }
@@ -105,6 +122,10 @@ func (p *palette) step() bool {
 
 func (p *palette) refresh(m *Model) {
 	switch p.mode {
+	case pmWorkspaces:
+		p.in.Placeholder = "Filter your workspaces"
+	case pmWorkspace:
+		p.in.Placeholder = "Filter this workspace"
 	case pmServices:
 		p.in.Placeholder = "Filter services"
 	case pmPods:
@@ -162,12 +183,33 @@ func (m *Model) paletteKey(k tea.KeyMsg) tea.Cmd {
 		switch key {
 		case "esc":
 			m.pal = nil
-		case "left", "shift+tab", "h":
-			p.card = (p.card + len(cardTitles) - 1) % len(cardTitles)
-		case "right", "tab", "l":
-			p.card = (p.card + 1) % len(cardTitles)
-		case "enter", "down":
-			p.setMode(m, pmode(p.card+1))
+		case "left", "shift+tab":
+			p.card = (p.card + wsCard) % (wsCard + 1)
+		case "right", "tab":
+			p.card = (p.card + 1) % (wsCard + 1)
+		case "up":
+			if p.card == wsCard {
+				p.wsCur = max(0, p.wsCur-1)
+			}
+		case "down":
+			if p.card == wsCard {
+				p.wsCur = min(len(m.workspaces()), p.wsCur+1)
+			} else {
+				p.setMode(m, pmode(p.card+1))
+			}
+		case "enter":
+			if p.card != wsCard {
+				p.setMode(m, pmode(p.card+1))
+				break
+			}
+			wss := m.workspaces()
+			if p.wsCur >= len(wss) {
+				m.pal = nil
+				m.modal = newWorkspaceModal(m, nil)
+				return textinput.Blink
+			}
+			p.ws = wss[p.wsCur].Name
+			p.setMode(m, pmWorkspace)
 		default:
 			// Typing starts a search right away.
 			var cmd tea.Cmd
@@ -183,13 +225,33 @@ func (m *Model) paletteKey(k tea.KeyMsg) tea.Cmd {
 	switch key {
 	case "esc":
 		p.in.SetValue("")
-		p.setMode(m, pmCards)
+		back := p.parent
+		if p.mode == pmWorkspaces || p.closeOnEsc {
+			m.pal = nil // opened on its own with w; esc closes it
+			return nil
+		}
+		p.setMode(m, back)
 		return nil
 	case "backspace":
 		if p.in.Value() == "" {
-			p.setMode(m, pmCards)
+			if p.mode == pmWorkspaces {
+				return nil
+			}
+			p.setMode(m, p.parent)
 			return nil
 		}
+	}
+	if p.mode == pmWorkspace {
+		if cmd, ok := m.workspaceActionKey(key); ok {
+			return cmd
+		}
+		switch key {
+		case "up", "down", "ctrl+p", "ctrl+n", "tab", "enter":
+		default:
+			return nil // no filter box in a workspace; other letters do nothing
+		}
+	}
+	switch key {
 	case "up", "ctrl+p":
 		p.cur = max(0, p.cur-1)
 		return nil
@@ -199,6 +261,12 @@ func (m *Model) paletteKey(k tea.KeyMsg) tea.Cmd {
 	case "enter":
 		if p.cur < len(p.matches) {
 			it := p.items[p.matches[p.cur]]
+			// Remember the workspace a service was opened from, so esc in
+			// the service comes back to it.
+			m.wsReturn = ""
+			if p.mode == pmWorkspace && it.kind == pkService {
+				m.wsReturn = p.ws
+			}
 			m.pal = nil
 			return it.run(m)
 		}
@@ -218,6 +286,10 @@ func (m *Model) paletteKey(k tea.KeyMsg) tea.Cmd {
 // already decrypted this session; searching never triggers a KMS call.
 func (m *Model) paletteItems(mode pmode) []pitem {
 	switch mode {
+	case pmWorkspace:
+		return m.workspaceItems(m.pal.ws)
+	case pmWorkspaces:
+		return m.workspaceListItems()
 	case pmServices:
 		return m.serviceItems()
 	case pmPods:
@@ -235,37 +307,42 @@ func (m *Model) serviceItems() []pitem {
 		nameW = max(nameW, len(sv.name))
 	}
 	for _, sv := range m.allServices() {
-		sv := sv
-		var envs []string
-		for _, s := range sv.secrets {
-			envs = append(envs, s.Env)
-		}
-		items = append(items, pitem{kind: pkService, title: sv.name, extra: strings.Join(envs, " "),
-			render: func(sel bool) string {
-				st := sText
-				if sel {
-					st = sAmberB
-				}
-				// One fixed column per environment, as on the home screen.
-				var tags []string
-				for _, e := range m.envs {
-					if sv.envIndex(e) >= 0 {
-						tags = append(tags, envStyle(e).Render(e))
-					} else {
-						tags = append(tags, strings.Repeat(" ", len(e)))
-					}
-				}
-				return st.Render(pad(sv.name, nameW)) + "  " + strings.Join(tags, " ")
-			},
-			run: func(m *Model) tea.Cmd {
-				if !m.selectService(sv.name) {
-					m.envIdx = 0
-					m.selectService(sv.name)
-				}
-				return m.openService(sv.name, "")
-			}})
+		items = append(items, m.serviceItem(sv, nameW))
 	}
 	return items
+}
+
+// serviceItem is one service row: enter opens that service's secrets.
+func (m *Model) serviceItem(sv service, nameW int) pitem {
+	var envs []string
+	for _, s := range sv.secrets {
+		envs = append(envs, s.Env)
+	}
+	return pitem{kind: pkService, title: sv.name, extra: strings.Join(envs, " "),
+		render: func(sel bool) string {
+			st := sText
+			if sel {
+				st = sAmberB
+			}
+			// One fixed column per environment, as on the home screen.
+			var tags []string
+			for _, e := range m.envs {
+				if sv.envIndex(e) >= 0 {
+					tags = append(tags, envStyle(e).Render(e))
+				} else {
+					tags = append(tags, strings.Repeat(" ", len(e)))
+				}
+			}
+			return st.Render(pad(sv.name, nameW)) + "  " + strings.Join(tags, " ")
+		},
+		run: func(m *Model) tea.Cmd {
+			if !m.selectService(sv.name) {
+				m.envIdx = 0
+				m.homeIn.SetValue("")
+				m.selectService(sv.name)
+			}
+			return m.openService(sv.name, "")
+		}}
 }
 
 func (m *Model) podItems() []pitem {
@@ -366,24 +443,52 @@ func (m *Model) jumpTo(s store.Secret, key string) tea.Cmd {
 
 func (m *Model) viewPalette() string {
 	p := m.pal
-	w := min(84, m.w-8)
+	w := min(112, m.w-8)
 	inner := w - 2 // Width includes the padding, not the border
 
 	crumb := ""
-	if p.mode != pmCards {
+	switch p.mode {
+	case pmCards:
+	case pmWorkspace:
+		crumb = sMuted.Render("Workspaces › " + trunc(p.ws, 24))
+	case pmWorkspaces:
+		crumb = sMuted.Render("Workspaces ›")
+	default:
 		crumb = sMuted.Render(cardTitles[p.mode-1] + " ›")
 	}
 	p.in.Width = inner - lipgloss.Width(crumb) - 6
-	rows := []string{spread(p.in.View(), crumb, inner), sLine.Render(strings.Repeat("─", inner))}
+	top := p.in.View()
+	if p.mode == pmWorkspace {
+		n := 0
+		if ws, ok := m.findWorkspace(p.ws); ok {
+			n = len(ws.Services)
+		}
+		top = sAmber.Render("▦  ") + sWhiteB.Render(p.ws) + sMuted.Render("  ·  "+plural(n, "service"))
+	}
+	rows := []string{spread(top, crumb, inner), sLine.Render(strings.Repeat("─", inner))}
 
 	if p.mode == pmCards {
-		rows = append(rows, "", m.viewCards(inner), "",
-			hints([][2]string{{"←→", "choose"}, {"enter", "open"}, {"type", "to search"}, {"esc", "close"}}))
+		rows = append(rows, "", m.viewCardScreen(inner), "",
+			hints([][2]string{{"←→", "choose"}, {"↑↓", "workspaces"}, {"enter", "open"}, {"type", "to search"}, {"esc", "close"}}))
 	} else {
 		rows = append(rows, m.viewPaletteList(inner)...)
 	}
 	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(cAmber).
 		Padding(0, 1).Width(w).Render(strings.Join(rows, "\n"))
+}
+
+// viewCardScreen puts the workspace column to the right of the cards, or
+// under them when the window is narrow.
+func (m *Model) viewCardScreen(inner int) string {
+	const colW = 30
+	if inner >= 90 {
+		cards := m.viewCards(inner - colW - 3)
+		h := lipgloss.Height(cards)
+		col := lipgloss.NewStyle().Width(colW).Render(strings.Join(m.viewWorkspaceColumn(colW, h), "\n"))
+		sep := lipgloss.NewStyle().Foreground(cLine).Render(strings.TrimRight(strings.Repeat("│\n", h), "\n"))
+		return lipgloss.JoinHorizontal(lipgloss.Top, cards, " ", sep, " ", col)
+	}
+	return m.viewCards(inner) + "\n\n" + strings.Join(m.viewWorkspaceColumn(inner, 6), "\n")
 }
 
 // viewCards draws the three tiles: an icon at the top, the name and a live
@@ -417,7 +522,7 @@ func (m *Model) viewCards(inner int) string {
 	cards := []card{
 		{sAmber.Render("▤"), "Services", sMuted.Render(plural(len(m.allServices()), "service"))},
 		{sAmber.Render("◈"), "Pod health", podStatus},
-		{sAmber.Render("⌕"), "Search", sMuted.Render("keys, envs, actions")},
+		{sAmber.Render("⌕"), "Search", sMuted.Render("keys & actions")},
 	}
 	var tiles []string
 	for i, c := range cards {
@@ -484,7 +589,12 @@ func (m *Model) viewPaletteList(inner int) []string {
 	}
 	count := sFaint.Render(plural(len(p.matches), "result"))
 	foot := hints([][2]string{{"↑↓", "move"}, {"enter", "open"}, {"esc", "back"}})
-	return append(rows, sLine.Render(strings.Repeat("─", inner)), spread(foot, count, inner))
+	rows = append(rows, sLine.Render(strings.Repeat("─", inner)), spread(foot, count, inner))
+	if p.mode == pmWorkspace {
+		dim := func(k, l string) string { return sFaint.Bold(true).Render(k) + " " + sFaint.Render(l) }
+		rows = append(rows, dim("e", "edit workspace")+"   "+dim("d", "delete workspace"))
+	}
+	return rows
 }
 
 func (m *Model) podsHeader(inner int) string {

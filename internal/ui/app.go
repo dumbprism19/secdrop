@@ -109,6 +109,7 @@ type Model struct {
 	pendingKey string // key to highlight once a decrypt finishes
 	fx         map[string]revealFx
 	hist       *historyView
+	wsReturn   string          // workspace to return to when leaving the open service
 	homeIn     textinput.Model // "/" filter for services
 	keyIn      textinput.Model // "/" filter for keys in the panel
 	typing     int             // 0 none, 1 home filter, 2 key filter
