@@ -2,7 +2,7 @@ module github.com/dumbprism19/secdrop
 
 go 1.26.9
 
-toolchain go1.26.10
+toolchain go1.26.11
 
 require (
 	cloud.google.com/go/storage v1.69.0
