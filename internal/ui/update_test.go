@@ -47,6 +47,14 @@ func TestUpdateNotices(t *testing.T) {
 		t.Fatalf("missing failure reason:\n%s", v)
 	}
 
+	// Installed with install.sh: point at the same installer, not `go install`.
+	m.opts.UpdateErr = nil
+	m.opts.UpdateCommand = "curl -fsSL https://raw.githubusercontent.com/dumbprism19/secdrop/main/install.sh | sh"
+	m.w = 220
+	if v := m.View(); !strings.Contains(v, "install.sh | sh") || strings.Contains(v, "go install") {
+		t.Fatalf("release installs should show the curl command:\n%s", v)
+	}
+
 	// Only on the home screen, not inside a service.
 	m.openService("payments-api", "prod")
 	if strings.Contains(m.View(), "is available") {

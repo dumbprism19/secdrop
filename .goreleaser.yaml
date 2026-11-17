@@ -1,0 +1,42 @@
+# Builds the release archives that install.sh and secdrop's self-update download.
+# Runs from .github/workflows/release.yml when a v* tag is pushed.
+# Try it locally with: go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean
+version: 2
+
+project_name: secdrop
+
+builds:
+  - id: secdrop
+    main: ./cmd/secdrop
+    binary: secdrop
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      # channel=release tells secdrop it was installed from a release archive,
+      # so it updates itself by downloading the next one (not with `go install`).
+      - -s -w -X main.version={{ .Version }} -X main.channel=release
+
+archives:
+  - id: secdrop
+    formats: [tar.gz]
+    # install.sh and internal/update depend on this exact name.
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+
+checksum:
+  # install.sh and internal/update depend on this exact name.
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  use: github
+
+release:
+  prerelease: auto

@@ -30,6 +30,14 @@ jobs:
       - name: Build
         run: go build -o bin/secdrop ./cmd/secdrop
 
+  install-script:
+    name: Lint install.sh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck install.sh
+
   vulncheck:
     name: Vulnerability check
     runs-on: ubuntu-latest
