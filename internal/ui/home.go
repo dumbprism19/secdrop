@@ -8,6 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/dumbprism19/secdrop/internal/update"
 )
 
 // The home screen is one rounded panel: a search bar you type into
@@ -343,7 +345,10 @@ func newSearchInput() textinput.Model {
 // couldn't do it itself.
 func (m *Model) updateNotice(w int) string {
 	o := m.opts
-	cmd := "go install github.com/dumbprism19/secdrop/cmd/secdrop@latest"
+	cmd := o.UpdateCommand
+	if cmd == "" {
+		cmd = update.GoInstallCmd
+	}
 	switch {
 	case o.UpdatedFrom != "" && !m.updatedSeen:
 		return sOK.Render("✓ ") + sText.Render("Updated secdrop "+o.UpdatedFrom+" → "+o.Version)

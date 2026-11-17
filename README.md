@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <code>go install github.com/dumbprism19/secdrop/cmd/secdrop@latest</code>
+  <code>curl -fsSL https://raw.githubusercontent.com/dumbprism19/secdrop/main/install.sh | sh</code>
 </p>
 
 <p align="center">
@@ -104,17 +104,33 @@ services you work with as "Payments team" and open them without searching.
 
 ## Get started
 
-**1. Install** (macOS or Linux, Go 1.21 or newer):
+**1. Install** (macOS or Linux, Intel or Apple silicon / ARM):
 
 ```sh
-go install github.com/dumbprism19/secdrop/cmd/secdrop@latest
+curl -fsSL https://raw.githubusercontent.com/dumbprism19/secdrop/main/install.sh | sh
 ```
 
-This puts `secdrop` in `~/go/bin`. If your shell can't find it, add that folder to your `PATH`:
+This downloads the latest release, checks it against the release's checksums and puts
+`secdrop` in `~/.local/bin`. If that folder isn't in your `PATH` yet, the installer prints the
+line to add. No Go toolchain needed.
 
-```sh
-echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
-```
+<details>
+<summary>Other ways to install</summary>
+
+<br>
+
+| | |
+| --- | --- |
+| A specific version | `curl -fsSL https://raw.githubusercontent.com/dumbprism19/secdrop/main/install.sh \| SECDROP_VERSION=0.5.0 sh` |
+| A different folder | `curl -fsSL https://raw.githubusercontent.com/dumbprism19/secdrop/main/install.sh \| SECDROP_INSTALL_DIR=/usr/local/bin sh` |
+| Read it first | `curl -fsSLO https://raw.githubusercontent.com/dumbprism19/secdrop/main/install.sh`, read `install.sh`, then `sh install.sh` |
+| By hand | Download the archive for your system from [Releases](https://github.com/dumbprism19/secdrop/releases), check it against `checksums.txt` and put `secdrop` on your `PATH` |
+| With Go (1.21+) | `go install github.com/dumbprism19/secdrop/cmd/secdrop@latest` (installs to `~/go/bin`) |
+
+Switching from `go install` to the installer? Remove the old copy (`rm ~/go/bin/secdrop`) so
+it doesn't shadow the new one. The installer warns you if it does.
+
+</details>
 
 **2. Run it:**
 
@@ -205,8 +221,10 @@ Settings live in `~/.config/secdrop/config.json`. They hold names only, never se
 | `"shared": ["SENTRY_DSN"]` | Keys that are meant to be identical in every environment, so compare doesn't flag them |
 
 **Updates.** When secdrop starts, it checks for a newer release (at most once an hour, and
-never for more than 2 seconds). If it was installed with `go install`, it updates itself and
-restarts; otherwise the home screen tells you how to update. `run` and `export` never update.
+never for more than 2 seconds). It updates itself the way you installed it: copies from the
+installer download the new release and check its checksum, copies from `go install` run
+`go install`. Then it restarts. If it can't (for example, it can't write to its folder), the
+home screen says why and how to update by hand. `run` and `export` never update.
 
 </details>
 
@@ -244,6 +262,11 @@ git clone https://github.com/dumbprism19/secdrop.git && cd secdrop
 go test ./...
 go build -o bin/secdrop ./cmd/secdrop && ./bin/secdrop
 ```
+
+**Releasing.** Push a tag such as `v0.5.0`. The Release workflow runs the tests and
+[GoReleaser](.goreleaser.yaml), which attaches the macOS and Linux archives and
+`checksums.txt` to the GitHub release. `install.sh` and self-updates download those files,
+so keep the archive names in `.goreleaser.yaml` as they are.
 
 The code is organised by job under `internal/`: `ui` for the screens, `store` for Berglas and
 Cloud Storage, `dotenv` for `.env` files, `secret` for the value type that won't print itself,

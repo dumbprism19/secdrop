@@ -32,6 +32,7 @@ type Options struct {
 	UpdatedFrom     string // this run follows an automatic update from that version
 	UpdateAvailable string // a newer release (e.g. v0.4.0) wasn't installed
 	UpdateErr       error  // why installing it failed, if it was tried
+	UpdateCommand   string // how to update by hand, matching how secdrop was installed
 }
 
 type screen int
