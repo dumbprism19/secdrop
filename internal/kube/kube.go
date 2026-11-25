@@ -7,10 +7,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2/google"
 )
 
 // ErrGcloudAuth means kubectl's gcloud credential plugin has no valid login.
@@ -64,11 +68,19 @@ func Load(ctx context.Context) (Snapshot, error) {
 	}
 	snap := Snapshot{Context: strings.TrimSpace(string(name))}
 
-	out, err := run(ctx, "get", "pods", "--all-namespaces", "-o", "json", "--request-timeout=10s")
-	if err != nil {
-		if out, err = run(ctx, "get", "pods", "-o", "json", "--request-timeout=10s"); err != nil {
-			return snap, err
+	out, err := getPods(ctx)
+	if errors.Is(err, ErrGcloudAuth) {
+		// kubectl's GKE plugin reads the gcloud CLI login, which can need
+		// reauthentication even while secdrop's Application Default
+		// Credentials are fine. Retry with the ADC token.
+		if o, e := getPodsWithADC(ctx); e == nil {
+			out, err = o, nil
+		} else {
+			err = fmt.Errorf("%w (retry with Application Default Credentials failed: %v)", ErrGcloudAuth, e)
 		}
+	}
+	if err != nil {
+		return snap, err
 	}
 	var list struct {
 		Items []struct {
@@ -134,6 +146,77 @@ func Load(ctx context.Context) (Snapshot, error) {
 		return a.Namespace+"/"+a.Name < b.Namespace+"/"+b.Name
 	})
 	return snap, nil
+}
+
+// getPods lists pods in all namespaces, falling back to the context's
+// default namespace. extra flags (such as --kubeconfig) go first.
+func getPods(ctx context.Context, extra ...string) ([]byte, error) {
+	out, err := run(ctx, append(extra, "get", "pods", "--all-namespaces", "-o", "json", "--request-timeout=10s")...)
+	if err == nil || errors.Is(err, ErrGcloudAuth) {
+		return out, err
+	}
+	return run(ctx, append(extra, "get", "pods", "-o", "json", "--request-timeout=10s")...)
+}
+
+// getPodsWithADC runs getPods against a temporary copy of the current
+// context whose user is replaced by an Application Default Credentials
+// token. The token lives only in a 0600 file that is removed afterwards,
+// so it never shows up in the process list.
+func getPodsWithADC(ctx context.Context) ([]byte, error) {
+	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return nil, fmt.Errorf("no Application Default Credentials: %w", err)
+	}
+	tok, err := creds.TokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("Application Default Credentials can't mint a token: %w", err)
+	}
+	raw, err := run(ctx, "config", "view", "--minify", "--raw", "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("can't read the current kubectl context: %w", err)
+	}
+	cfg, err := withToken(raw, tok.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.CreateTemp("", "secdrop-kubeconfig-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(f.Name())
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
+		return nil, err
+	}
+	if _, err := f.Write(cfg); err != nil {
+		f.Close()
+		return nil, err
+	}
+	if err := f.Close(); err != nil {
+		return nil, err
+	}
+	return getPods(ctx, "--kubeconfig", f.Name())
+}
+
+// withToken replaces every user's credentials in a minified kubeconfig with
+// a bearer token, keeping clusters and contexts as they are.
+func withToken(raw []byte, token string) ([]byte, error) {
+	var cfg map[string]any
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		return nil, fmt.Errorf("can't parse kubectl config: %w", err)
+	}
+	users, _ := cfg["users"].([]any)
+	if len(users) == 0 {
+		return nil, errors.New("current kubectl context has no user")
+	}
+	for _, u := range users {
+		um, ok := u.(map[string]any)
+		if !ok {
+			return nil, errors.New("unexpected kubectl config user entry")
+		}
+		um["user"] = map[string]any{"token": token}
+	}
+	return json.Marshal(cfg)
 }
 
 func run(ctx context.Context, args ...string) ([]byte, error) {
