@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
+	"github.com/dumbprism19/secdrop/internal/repos"
 	"github.com/dumbprism19/secdrop/internal/secret"
 	"github.com/dumbprism19/secdrop/internal/store"
 )
@@ -259,5 +261,144 @@ func TestPastePlainValueStillWorks(t *testing.T) {
 	m.Update(pasteMsg("just-a-token-value"))
 	if md := m.modal; md.valIn.Value() != "just-a-token-value" || md.keyIn.Value() != "" {
 		t.Fatalf("plain paste went wrong: key %q value %q", md.keyIn.Value(), md.valIn.Value())
+	}
+}
+
+func TestExportToRepo(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	m := fixture()
+	o := m.shownDoc()
+	m.openExport(o)
+	if v := m.View(); !strings.Contains(v, "Looking for payments-api repos") {
+		t.Fatal("should say it is searching")
+	}
+	m.Update(reposMsg{obj: o.sec.Object, repos: []repos.Repo{{Path: repo, Why: "folder name"}}})
+	v := m.View()
+	dump(t, "export-repo", v)
+	for _, want := range []string{"Somewhere else", "Destination", filepath.Base(repo)} {
+		if !strings.Contains(v, want) {
+			t.Errorf("view missing %q", want)
+		}
+	}
+	if got := expandHome(m.modal.valIn.Value()); got != filepath.Join(repo, ".env") {
+		t.Fatalf("first repo should be selected, path %q", got)
+	}
+
+	// Not git-ignored: the first enter only warns.
+	enter := tea.KeyMsg{Type: tea.KeyEnter}
+	m.Update(enter)
+	if m.modal == nil || !strings.Contains(m.modal.err, "isn't git-ignored") {
+		t.Fatalf("expected a warning, modal=%v", m.modal)
+	}
+	if _, err := os.Stat(filepath.Join(repo, ".env")); err == nil {
+		t.Fatal("must not write before confirming")
+	}
+	m.Update(enter)
+	if m.modal != nil {
+		t.Fatalf("second enter should write, err=%q", m.modal.err)
+	}
+	st, err := os.Stat(filepath.Join(repo, ".env"))
+	if err != nil || st.Mode().Perm() != 0o600 {
+		t.Fatalf("wrote %v %v", st, err)
+	}
+
+	// .env now exists and is ignored: the next export goes to .env.prod without a warning.
+	os.WriteFile(filepath.Join(repo, ".gitignore"), []byte(".env*\n"), 0o644)
+	m.openExport(o)
+	m.Update(reposMsg{obj: o.sec.Object, repos: []repos.Repo{{Path: repo}}})
+	if got := expandHome(m.modal.valIn.Value()); got != filepath.Join(repo, ".env.prod") {
+		t.Fatalf("path %q", got)
+	}
+	m.Update(enter)
+	if m.modal != nil {
+		t.Fatalf("ignored file should write at once, err=%q", m.modal.err)
+	}
+
+	// "Somewhere else" restores the plain file name, and a stale result is ignored.
+	m.openExport(o)
+	m.Update(reposMsg{obj: "other-object", repos: []repos.Repo{{Path: repo}}})
+	if !m.modal.ex.busy {
+		t.Fatal("result for another secret must be ignored")
+	}
+	m.Update(reposMsg{obj: o.sec.Object, repos: []repos.Repo{{Path: repo}}})
+	m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	if got := m.modal.valIn.Value(); got != "./payments-api.prod.env" {
+		t.Fatalf("somewhere else path %q", got)
+	}
+}
+
+func TestExportFromHomeAndKey(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+	m := fixture()
+
+	// E in an open service opens the dialog straight away.
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("E")})
+	if m.modal == nil || m.modal.kind != mExport {
+		t.Fatal("E should open the export dialog")
+	}
+	m.modal = nil
+
+	// On the home screen the palette offers export for the highlighted service.
+	m.closePanel()
+	ss := m.services()
+	want := "Export " + ss[m.cur].name + " to a .env file"
+	found := false
+	for _, it := range m.searchItems() {
+		found = found || it.title == want
+	}
+	if !found {
+		t.Fatalf("palette should offer %q", want)
+	}
+
+	// Already decrypted: the dialog opens at once.
+	m.exportService("payments-api")
+	if m.modal == nil || m.modal.kind != mExport || m.modal.o.sec.Service != "payments-api" {
+		t.Fatal("cached service should open export at once")
+	}
+	m.modal = nil
+	m.closePanel()
+
+	// Not decrypted yet: wait for the decrypt, then open.
+	m.exportService("auth-service")
+	if m.modal != nil || !m.pendingExport {
+		t.Fatal("should wait for the decrypt")
+	}
+	sec := *m.panelSecret()
+	m.Update(openMsg{sec, secret.FromString("A=1\n"), nil, true})
+	if m.modal == nil || m.modal.kind != mExport || m.modal.o.sec.Object != sec.Object || m.pendingExport {
+		t.Fatal("export should open once decrypted")
+	}
+	m.modal = nil
+	m.closePanel()
+
+	// A failed decrypt drops the pending export instead of opening it later.
+	m.exportService("notifier")
+	sec = *m.panelSecret()
+	m.Update(openMsg{sec, secret.Value{}, errors.New("permission denied"), true})
+	if m.pendingExport || m.modal != nil {
+		t.Fatal("failed decrypt must cancel the export")
+	}
+}
+
+func TestExportHintWhileViewingSecrets(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+	m := fixture()
+	m.w = 160 // wide enough that the hint bar isn't cut short
+	if v := m.View(); !strings.Contains(v, "E export .env") {
+		t.Fatal("the key bar should show E export .env while a service is open")
+	}
+	m.revealed["REDIS_URL"] = 1 // also while values are revealed
+	if v := m.View(); !strings.Contains(v, "E export .env") {
+		t.Fatal("hint missing while a value is revealed")
+	}
+	// Typing into the "/" filter must not open export.
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("E")})
+	if m.modal != nil {
+		t.Fatal("E while filtering should type, not export")
 	}
 }

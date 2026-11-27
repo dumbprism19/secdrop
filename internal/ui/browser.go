@@ -212,6 +212,7 @@ func (m *Model) showEnv() tea.Cmd {
 
 func (m *Model) closePanel() {
 	m.panel, m.cmp, m.pendingKey, m.hist, m.wsReturn = false, nil, "", nil, ""
+	m.pendingExport = false
 	m.keyIn.SetValue("")
 	m.keyIn.Blur()
 	if m.typing == 2 {
@@ -333,6 +334,9 @@ func (m *Model) handleOpen(msg openMsg) tea.Cmd {
 	}
 	if msg.err != nil {
 		m.openErr[msg.sec.Object] = msg.err
+		if msg.show && msg.sec.Object == m.shown {
+			m.pendingExport = false
+		}
 		return m.failure(msg.err)
 	}
 	doc := dotenv.Parse(msg.val.Bytes())
@@ -345,6 +349,10 @@ func (m *Model) handleOpen(msg openMsg) tea.Cmd {
 	m.updateSecret(msg.sec)
 	if msg.show && msg.sec.Object == m.shown {
 		m.applyPendingKey()
+		if m.pendingExport && m.panel {
+			m.pendingExport = false
+			return m.openExport(m.docs[msg.sec.Object])
+		}
 	}
 	return nil
 }
@@ -546,6 +554,8 @@ func (m *Model) panelKey(key string) tea.Cmd {
 		if ok && o.env {
 			m.modal = newDeleteModal(o, e.Key)
 		}
+	case "E":
+		return m.openExport(o)
 	case "d":
 		return m.startCompare()
 	case "h":
@@ -722,7 +732,7 @@ func (m *Model) footer(w int) string {
 		}
 		h = [][2]string{{"↑↓", "move"}, {"tab", "other env"}, {"enter", enter}, {"esc", "close"}}
 	case m.panel && m.shownDoc() != nil:
-		h = [][2]string{{"enter", "reveal"}, {"y", "copy export"}, {"e", "edit"}, {"/", "search"}, {"tab", "environment"}, {"w", "workspaces"}, {"esc", "back"}, {paletteKey, "more"}}
+		h = [][2]string{{"enter", "reveal"}, {"y", "copy export"}, {"e", "edit"}, {"E", "export .env"}, {"/", "search"}, {"tab", "environment"}, {"w", "workspaces"}, {"esc", "back"}, {paletteKey, "more"}}
 	case m.panel:
 		h = [][2]string{{"enter", "decrypt"}, {"tab", "environment"}, {"esc", "back"}}
 	default:

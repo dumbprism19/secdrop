@@ -375,8 +375,14 @@ func (m *Model) searchItems() []pitem {
 		items = append(items, pitem{kind: pkAction, title: title, detail: detail, run: run})
 	}
 
+	if !m.panel {
+		if ss := m.services(); m.cur < len(ss) {
+			name := ss[m.cur].name
+			act("Export "+name+" to a .env file", "opens it first", func(m *Model) tea.Cmd { return m.exportService(name) })
+		}
+	}
 	if o := m.shownDoc(); o != nil && m.panel {
-		act("Export to a .env file", label(o.sec), func(m *Model) tea.Cmd { m.modal = newExportModal(o); return textinput.Blink })
+		act("Export to a .env file", label(o.sec), func(m *Model) tea.Cmd { return m.openExport(o) })
 		act("History and access log", label(o.sec), func(m *Model) tea.Cmd { return m.openHistory() })
 		if o.env {
 			act("Add a key", label(o.sec), func(m *Model) tea.Cmd { m.modal = newAddModal(o); return textinput.Blink })

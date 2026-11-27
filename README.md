@@ -97,6 +97,7 @@ services you work with as "Payments team" and open them without searching.
 |---|---|
 | 🕘 **History and undo** | Every saved version, which keys changed, who saved it, and a one-step restore. |
 | 🩺 **Pod health** | Each service shows its pods from your current `kubectl` context, problems first. |
+| 📦 **Export to a repo** | <kbd>E</kbd> in a service (or <kbd>⌘K</kbd> → *Export … to a .env file* from anywhere) finds your local git checkout of the service (by folder name or `origin` remote) and writes `.env` there, warning you first if git wouldn't ignore it. Or pick any other path. |
 | 🗂 **Workspaces** | Named shortlists of services, a key press away with <kbd>w</kbd>. |
 | ⚡ **Use secrets in your apps** | `secdrop run my-service dev -- npm start` starts any command with the secrets loaded, with nothing written to disk. |
 | 🔄 **Always up to date** | secdrop updates itself when a new release is out and tells you which version you're on. |

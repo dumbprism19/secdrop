@@ -58,6 +58,8 @@ type modal struct {
 	// returning to an earlier step.
 	oneStep bool
 	ctx     string
+	// export dialog destinations
+	ex *exportState
 }
 
 func newInput(placeholder string) textinput.Model {
@@ -110,27 +112,7 @@ func (m *Model) modalKey(k tea.KeyMsg) tea.Cmd {
 		return m.workspaceDeleteKey(key)
 
 	case mExport:
-		switch key {
-		case "esc":
-			m.modal = nil
-			return nil
-		case "enter":
-			path := strings.TrimSpace(md.valIn.Value())
-			if path == "" {
-				return nil
-			}
-			n, err := exportFile(path, md.o)
-			if err != nil {
-				md.err = err.Error()
-				return nil
-			}
-			m.modal = nil
-			return m.flash(fmt.Sprintf("Wrote %s to %s (only you can read it) · don't commit it", plural(n, "key"), path), false)
-		}
-		md.err = ""
-		var cmd tea.Cmd
-		md.valIn, cmd = md.valIn.Update(k)
-		return cmd
+		return m.exportKey(k)
 
 	case mPod:
 		switch key {
@@ -425,13 +407,8 @@ func (m *Model) viewModal() string {
 		body = []string{sText.Render("Only the shortlist is removed. Services and secrets are untouched."), "",
 			hints([][2]string{{"y", "delete"}, {"n", "keep it"}})}
 	case mExport:
-		title = "Export to a file"
-		body = []string{where, "", sMuted.Render("File"), md.valIn.View(), sLine.Render(strings.Repeat("─", w-4))}
-		if md.err != "" {
-			body = append(body, sHot.Render(md.err))
-		}
-		body = append(body, "", sMuted.Render("Written with owner-only permissions. Existing files are never overwritten."),
-			"", hints([][2]string{{"enter", "write"}, {"esc", "cancel"}}))
+		title = "Export to a .env file"
+		body = m.viewExport(w, where)
 	case mPod:
 		p := md.pod
 		glyph, st := sOK.Render("●"), sOK
@@ -468,6 +445,7 @@ func (m *Model) viewHelp() string {
 		row("v", "reveal every value"),
 		row("y", "copy as export KEY=value"),
 		row("c", "copy the whole env file"),
+		row("E", "export to a .env file (finds the service's git repo)"),
 		row("e", "edit a value"),
 		row("d", "compare; enter copies a missing key across"),
 		row("h", "history: versions, who changed it, restore"),

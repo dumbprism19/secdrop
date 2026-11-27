@@ -103,35 +103,36 @@ type Model struct {
 	bk bucketPicker
 
 	// browser
-	bucket      string
-	secrets     []store.Secret
-	listing     bool
-	listErr     error
-	envs        []string
-	envIdx      int    // 0 = all
-	panel       bool   // the service panel is open
-	svc         string // service shown in the panel
-	penv        int    // environment index within that service
-	pendingKey  string // key to highlight once a decrypt finishes
-	fx          map[string]revealFx
-	hist        *historyView
-	wsReturn    string          // workspace to return to when leaving the open service
-	updatedSeen bool            // the "Updated to …" notice has been seen
-	homeIn      textinput.Model // "/" filter for services
-	keyIn       textinput.Model // "/" filter for keys in the panel
-	typing      int             // 0 none, 1 home filter, 2 key filter
-	cur, off    int
-	kcur        int
-	koff        int
-	sortAZ      bool
-	docs        map[string]*opened // by object name
-	shown       string             // object shown in the keys pane
-	loading     string             // object being decrypted
-	openErr     map[string]error
-	revealed    map[string]int // key → reveal id, for the shown object
-	revealSeq   int
-	changed     map[string]bool
-	cmp         *compareView
+	bucket        string
+	secrets       []store.Secret
+	listing       bool
+	listErr       error
+	envs          []string
+	envIdx        int    // 0 = all
+	panel         bool   // the service panel is open
+	svc           string // service shown in the panel
+	penv          int    // environment index within that service
+	pendingKey    string // key to highlight once a decrypt finishes
+	pendingExport bool   // open the export dialog once a decrypt finishes
+	fx            map[string]revealFx
+	hist          *historyView
+	wsReturn      string          // workspace to return to when leaving the open service
+	updatedSeen   bool            // the "Updated to …" notice has been seen
+	homeIn        textinput.Model // "/" filter for services
+	keyIn         textinput.Model // "/" filter for keys in the panel
+	typing        int             // 0 none, 1 home filter, 2 key filter
+	cur, off      int
+	kcur          int
+	koff          int
+	sortAZ        bool
+	docs          map[string]*opened // by object name
+	shown         string             // object shown in the keys pane
+	loading       string             // object being decrypted
+	openErr       map[string]error
+	revealed      map[string]int // key → reveal id, for the shown object
+	revealSeq     int
+	changed       map[string]bool
+	cmp           *compareView
 
 	toast    string
 	toastHot bool
@@ -373,6 +374,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case historyMsg, auditMsg, versionMsg:
 		return m, m.handleHistory(msg)
+
+	case reposMsg:
+		m.handleRepos(msg)
+		return m, nil
 
 	case podsMsg:
 		m.podsBusy, m.podsAt = false, time.Now()
