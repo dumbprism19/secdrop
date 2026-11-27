@@ -19,28 +19,71 @@ PROTO="=https" WGET_HTTPS="--https-only"
 if [ -n "${SECDROP_RELEASES_URL:-}" ]; then PROTO="=https,http" WGET_HTTPS=""; fi
 
 if [ -t 2 ]; then
+	TTY=1
 	BOLD="$(printf '\033[1m')" RED="$(printf '\033[31m')" YELLOW="$(printf '\033[33m')" GREEN="$(printf '\033[32m')" RESET="$(printf '\033[0m')"
 else
+	TTY=""
 	BOLD="" RED="" YELLOW="" GREEN="" RESET=""
 fi
 
 say() { printf '%s\n' "$*" >&2; }
 warn() { printf '%swarning:%s %s\n' "$YELLOW$BOLD" "$RESET" "$*" >&2; }
 fail() {
+	if [ -n "$STEP" ]; then step_end bad; fi
+	# Errors from a quiet download were held back so they don't break the step line.
+	if [ -s "${tmp:-}/download.err" ]; then sed 's/^/  /' "$tmp/download.err" >&2; fi
 	printf '%serror:%s %s\n' "$RED$BOLD" "$RESET" "$*" >&2
 	say "secdrop was NOT installed."
 	exit 1
 }
 
+# Steps show as "  Label…" while running, then turn into "  ✓ Label" (or ✗ on
+# failure, via fail). On a terminal the line is rewritten in place; otherwise
+# only the finished line is printed. With a progress bar (step_begin LABEL bar)
+# the bar is drawn on the line below the label and cleared when the step ends.
+STEP="" STEP_BAR=""
+step_begin() {
+	STEP="$1" STEP_BAR=""
+	if [ "${2:-}" = bar ] && [ -n "$BAR_OK" ]; then STEP_BAR=1; fi
+	[ -n "$TTY" ] || return 0
+	if [ -n "$STEP_BAR" ]; then printf '  %s…\n' "$STEP" >&2; else printf '  %s…' "$STEP" >&2; fi
+}
+step_end() {
+	if [ "$1" = ok ]; then mark="${GREEN}${BOLD}✓${RESET}"; else mark="${RED}${BOLD}✗${RESET}"; fi
+	if [ -n "$TTY" ] && [ -n "$STEP_BAR" ] && [ "$1" = ok ]; then
+		# The cursor sits below the finished bar: clear it, then rewrite the label line.
+		printf '\033[1A\033[2K\033[1A' >&2
+	fi
+	# On failure mid-bar, curl/wget's own error stays on screen and the ✗ goes below it.
+	if [ -n "$TTY" ]; then printf '\r\033[2K' >&2; fi
+	printf '  %s %s\n' "$mark" "$STEP" >&2
+	STEP="" STEP_BAR=""
+}
+step_ok() { step_end ok; }
+
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# download URL FILE: fails (non-zero) on any HTTP error.
+# BAR_OK is set when a download progress bar can be drawn.
+BAR_OK=""
+if [ -n "$TTY" ] && { have curl || wget --help 2>&1 | grep -q -- --show-progress; }; then BAR_OK=1; fi
+
+# download URL FILE [bar]: fails (non-zero) on any HTTP error. With "bar" and
+# a terminal, shows a progress bar (wget needs --show-progress, 1.16+);
+# otherwise it is silent and any error is saved for fail to print.
 download() {
-	if have curl; then
-		curl --proto "$PROTO" --tlsv1.2 -fsSL --retry 3 -o "$2" "$1"
+	rm -f "$tmp/download.err"
+	if [ "${3:-}" = bar ] && [ -n "$BAR_OK" ]; then
+		if have curl; then
+			curl --proto "$PROTO" --tlsv1.2 -fSL --progress-bar --retry 3 -o "$2" "$1"
+		else
+			# shellcheck disable=SC2086 # empty or one flag, on purpose
+			wget -q --show-progress $WGET_HTTPS -O "$2" "$1"
+		fi
+	elif have curl; then
+		curl --proto "$PROTO" --tlsv1.2 -fsSL --retry 3 -o "$2" "$1" 2>"$tmp/download.err"
 	else
 		# shellcheck disable=SC2086 # empty or one flag, on purpose
-		wget -q $WGET_HTTPS -O "$2" "$1"
+		wget -q $WGET_HTTPS -O "$2" "$1" 2>"$tmp/download.err"
 	fi
 }
 
@@ -107,15 +150,22 @@ main() {
 
 	say "Installing ${BOLD}secdrop $version${RESET} ($os/$arch)…"
 
+	step_begin "Downloading checksums"
 	download "$base/checksums.txt" "$tmp/checksums.txt" ||
 		fail "couldn't download $base/checksums.txt. Does release v$version exist and have files attached?"
-	download "$base/$asset" "$tmp/$asset" ||
-		fail "couldn't download $base/$asset."
+	step_ok
 
+	step_begin "Downloading $asset" bar
+	download "$base/$asset" "$tmp/$asset" bar ||
+		fail "couldn't download $base/$asset."
+	step_ok
+
+	step_begin "Verifying checksum"
 	want="$(awk -v f="$asset" '$2 == f || $2 == "*" f { print $1; exit }' "$tmp/checksums.txt")"
 	[ -n "$want" ] || fail "$asset isn't listed in checksums.txt, so it can't be verified."
 	got="$(sha256 "$tmp/$asset")" || fail "need sha256sum, shasum or openssl to verify the download."
 	[ "$want" = "$got" ] || fail "checksum mismatch for $asset (expected $want, got $got). The download may be corrupted or tampered with."
+	step_ok
 
 	tar -xzf "$tmp/$asset" -C "$tmp" secdrop || fail "couldn't unpack $asset."
 	[ -f "$tmp/secdrop" ] || fail "$asset doesn't contain a secdrop binary."
